@@ -2481,6 +2481,8 @@ main() {
         printf "  %b View the web interface at http://pi.hole:${WEBPORT}/admin or http://%s/admin\\n\\n" "${INFO}" "${IPV4_ADDRESS%/*}:${WEBPORT}"
         printf "  %b Web Interface password: %b%s%b\\n" "${INFO}" "${COL_LIGHT_GREEN}" "${pw}" "${COL_NC}"
         printf "  %b This can be changed using 'pihole setpassword'\\n\\n" "${INFO}"
+        printf "  %b To allow your user to use all CLI functions without authentication, add your user to the 'pihole' group with:\\n" "${INFO}"
+        printf "    sudo usermod -aG pihole \$your_user\\n\\n"
 
         # Final dialog message to the user
         dialog --no-shadow --keep-tite \
@@ -2493,7 +2495,7 @@ main() {
 \\n
 \\n
 \\nTo allow your user to use all CLI functions without authentication,\
-\\nadd your user to the 'pihole' group with something like:\
+\\nadd your user to the 'pihole' group with:\
 \\n
 \\n  sudo usermod -aG pihole \$your_user" "${r}" "${c}"
 
