@@ -1617,60 +1617,6 @@ create_pihole_user() {
     fi
 }
 
-# offer to add the first local user (UID 1000) to the pihole group
-local_user_to_pihole_group(){
-    local username
-    local str="Checking for user with UID 1000"
-    printf "  %b %s..." "${INFO}" "${str}"
-
-    username=$(getent passwd 1000 | cut -d: -f1)
-
-    # No user with UID 1000 found
-    if [[ -z "${username}" ]]; then
-        str="No user with UID 1000 found"
-        printf "%b  %b %s\\n" "${OVER}" "${CROSS}" "${str}"
-        return
-    fi
-    # User with UID 1000 already in pihole group
-    if id -nG "${username}" | grep -q pihole; then
-        str="User ${username} already in pihole group"
-        printf "%b  %b %s\\n" "${OVER}" "${TICK}" "${str}"
-        return
-    fi
-
-    # User with UID 1000 not in pihole group
-    # Offer dialog to add user to pihole group
-    dialog --no-shadow --keep-tite \
-        --backtitle "Pi-hole Installation" \
-        --title "Add user to pihole group" \
-        --yesno "\\nFor privacy reasons certain Pi-hole CLI functions are only allowed to members of the newly created the local group 'pihole'.\
-\\n\\nYour first local user is '${username}' \
-\\n\\nWould you like to add '${username}' to the pihole group? \
-\\n\\n\\nP.S. Any user can be added to the group later manually. "\
-        "${r}" "${c}" && result=0 || result=$?
-
-    case ${result} in
-    "${DIALOG_OK}")
-        # If they chose yes,
-        printf "  %b Adding user ${username} to pihole group\\n" "${INFO}"
-        if usermod -aG pihole "${username}"; then
-            printf "  %b User ${username} added to pihole group\\n" "${TICK}"
-        else
-            printf "  %b Error adding user ${username} to pihole group\\n" "${CROSS}"
-        fi
-        ;;
-    "${DIALOG_CANCEL}")
-        # If they chose no,
-        printf "  %b Not adding user ${username} to pihole group\\n" "${INFO}"
-        ;;
-    "${DIALOG_ESC}")
-        # User pressed <ESC>
-        printf "  %b Escape pressed, exiting installer at user group choice.%b\\n" "${COL_LIGHT_RED}" "${COL_NC}"
-        exit 1
-        ;;
-    esac
-}
-
 # Install the logrotate script
 installLogrotate() {
     local str="Installing latest logrotate script"
@@ -2429,7 +2375,6 @@ main() {
         setLogging
         # Let the user decide the FTL privacy level
         setPrivacyLevel
-
     else
         # Setup adlist file if not exists
         installDefaultBlocklists
@@ -2439,10 +2384,6 @@ main() {
 
     # Create the pihole user
     create_pihole_user
-    if [[ "${fresh_install}" == true ]]; then
-        # Let the user decide if they want to put their local user into the pihole group
-        local_user_to_pihole_group
-    fi
 
     # Download and install FTL
     local binary
@@ -2548,7 +2489,13 @@ main() {
 \\n\\nIPv4:	${IPV4_ADDRESS%/*}\
 \\nIPv6:	${IPV6_ADDRESS:-"Not Configured"}\
 \\nIf you have not done so already, the above IP should be set to static.\
-\\nView the web interface at http://pi.hole/admin:${WEBPORT} or http://${IPV4_ADDRESS%/*}:${WEBPORT}/admin\\n\\nYour Admin Webpage login password is ${pw}" "${r}" "${c}"
+\\nView the web interface at http://pi.hole/admin:${WEBPORT} or http://${IPV4_ADDRESS%/*}:${WEBPORT}/admin\\n\\nYour Admin Webpage login password is ${pw}\
+\\n
+\\n
+\\nTo allow your user to use all CLI functions without authentication,\
+\\nadd your user to the 'pihole' group with something like:\
+\\n
+\\n  sudo usermod -aG pihole \$your_user" "${r}" "${c}"
 
         INSTALL_TYPE="Installation"
     else
